@@ -1,0 +1,46 @@
+server:
+  # 只绑回环，调试门不暴露到局域网
+  address: 127.0.0.1
+  port: 8080
+
+spring:
+  config:
+    # 凭据在项目根目录的 qq-local.properties 里（已被 .gitignore 挡住，不进版本库）
+    # 该文件不存在时自动跳过，应用照常启动，只是不连网关
+    import: optional:file:./qq-local.properties
+
+qq:
+  api-base: https://api.bot.qq.com
+  token-path: /app/getAppAccessToken
+  gateway-path: /gateway
+  # 1<<25 GROUP_AND_C2C_EVENT：含 C2C_MESSAGE_CREATE 与 GROUP_AT_MESSAGE_CREATE
+  intents: 33554432
+  shard-index: 0
+  shard-total: 1
+  # true = 不真的往 QQ 发消息，只打日志。拿到凭据并验证链路后再改 false
+  dry-run: false
+  # 白名单不写在这里（openid 是个人标识）。写在 qq-local.properties 的 qq.allowed-open-ids
+  # 留空 = 放行所有人；逗号分隔可填多个
+
+logging:
+  level:
+    com.qqagent: DEBUG
+
+llm:
+  # false = EchoBrain 零花费；true = LlmBrain 真调模型
+  enabled: true
+  # api-key 写在项目根目录 qq-local.properties 里（不进版本库），这里不留占位避免优先级打架
+  base-url: https://api.deepseek.com
+  model: deepseek-flash
+  # 推理型模型：思维链会占额度，太小会导致正文为空（实测过）
+  max-output-tokens: 800
+  reasoning-effort: low
+  history-turns: 6
+  system-prompt: 你是一个 QQ 上的私人小助手，回答简短、口语化，用中文，不要使用 Markdown 语法。
+  # 单价 元/百万 token，官方 2026-11 实取：flash 输入未命中 1~2（高峰），输出 4~8（高峰）
+  # 这里按最贵的高峰档填，宁可高估花费
+  price-in-per-million: 2.0
+  price-out-per-million: 8.0
+  # 账单硬闸门：200 条/天 × 实测每条约 0.001~0.005 元 = 一天最多约 1 元
+  daily-reply-limit: 200
+  timeout-seconds: 45
